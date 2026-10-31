@@ -1,0 +1,136 @@
+{
+  "entities": {
+    "AdminUser": {
+      "title": "AdminUser",
+      "description": "Registered administrator allowed to access CMS and modify site content",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 200 },
+        "role": { "type": "string", "enum": ["superadmin", "editor"] },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "SiteSection": {
+      "title": "SiteSection",
+      "description": "Content for website sections such as hero, brand statement, services, about, contact, settings",
+      "type": "object",
+      "properties": {
+        "sectionId": { "type": "string", "maxLength": 64 },
+        "data": { "type": "object" },
+        "status": { "type": "string", "enum": ["draft", "published"] },
+        "updatedAt": { "type": "string" },
+        "updatedBy": { "type": "string", "maxLength": 128 }
+      },
+      "required": ["sectionId", "data", "status"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "Custom cart or booth catalog item",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "slug": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 200 },
+        "category": { "type": "string", "maxLength": 64 },
+        "categoryLabel": { "type": "string", "maxLength": 100 },
+        "shortDescription": { "type": "string", "maxLength": 500 },
+        "fullDescription": { "type": "string", "maxLength": 3000 },
+        "image": { "type": "string", "maxLength": 1000 },
+        "gallery": { "type": "array" },
+        "designTags": { "type": "array" },
+        "features": { "type": "array" },
+        "startingPrice": { "type": "string", "maxLength": 100 },
+        "conceptType": { "type": "string", "enum": ["Inspirasi Desain", "Konsep Desain", "Proyek Produksi"] },
+        "status": { "type": "string", "enum": ["draft", "published"] },
+        "featured": { "type": "boolean" },
+        "order": { "type": "number" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "slug", "name", "category", "status"]
+    },
+    "PortfolioItem": {
+      "title": "PortfolioItem",
+      "description": "Visual showcase portfolio item distinguishing real project vs design inspiration",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 200 },
+        "description": { "type": "string", "maxLength": 1000 },
+        "category": { "type": "string", "maxLength": 64 },
+        "categoryLabel": { "type": "string", "maxLength": 100 },
+        "image": { "type": "string", "maxLength": 1000 },
+        "isRealProject": { "type": "boolean" },
+        "status": { "type": "string", "enum": ["draft", "published"] },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "title", "image", "isRealProject", "status"]
+    },
+    "CategoryItem": {
+      "title": "CategoryItem",
+      "description": "Category taxonomy for products and showcase",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64 },
+        "label": { "type": "string", "maxLength": 100 },
+        "description": { "type": "string", "maxLength": 300 },
+        "order": { "type": "number" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "label"]
+    },
+    "MediaItem": {
+      "title": "MediaItem",
+      "description": "Uploaded assets in cloud storage media library",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "url": { "type": "string", "maxLength": 1000 },
+        "name": { "type": "string", "maxLength": 200 },
+        "altText": { "type": "string", "maxLength": 300 },
+        "size": { "type": "number" },
+        "type": { "type": "string", "maxLength": 50 },
+        "usedInCount": { "type": "number" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "url", "name"]
+    }
+  },
+  "firestore": {
+    "/admins/{adminId}": {
+      "schema": "AdminUser",
+      "description": "Authorized administrators list"
+    },
+    "/site_content/{sectionId}": {
+      "schema": "SiteSection",
+      "description": "Public and draft site content for pages and sections"
+    },
+    "/site_sections/{sectionId}": {
+      "schema": "SiteSection",
+      "description": "Public and draft site sections and settings"
+    },
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Carts and booths catalog collection"
+    },
+    "/portfolio/{portfolioId}": {
+      "schema": "PortfolioItem",
+      "description": "Showcase portfolio records separating real project and concept"
+    },
+    "/categories/{categoryId}": {
+      "schema": "CategoryItem",
+      "description": "Product taxonomy categories"
+    },
+    "/media/{mediaId}": {
+      "schema": "MediaItem",
+      "description": "Uploaded media items"
+    },
+    "/media_library/{mediaId}": {
+      "schema": "MediaItem",
+      "description": "Media library assets records"
+    }
+  }
+}
