@@ -30,17 +30,8 @@ export const MediaLibraryModal: React.FC<MediaLibraryModalProps> = ({
   const [urlInput, setUrlInput] = useState('');
   const [altTextInput, setAltTextInput] = useState('');
   const [activeTab, setActiveTab] = useState<'library' | 'upload' | 'url'>('library');
-
-  const defaultPresets: { url: string; name: string }[] = [
-    { url: '/src/assets/images/hero_gerobak_bontang_1793275251642.jpg', name: 'Hero Gerobak Bontang' },
-    { url: '/src/assets/images/gerobak_coffee_cart_1793275252747.jpg', name: 'Sanak Artisan Coffee Cart' },
-    { url: '/src/assets/images/gerobak_street_food_1793275253637.jpg', name: 'Urban Street Food Cart' },
-    { url: '/src/assets/images/gerobak_minimalist_kiosk_1793275672764.jpg', name: 'Minimalist Ivory Kiosk' },
-    { url: '/src/assets/images/gerobak_booth_container_1793275253367.jpg', name: 'Modular Container Kiosk' },
-    { url: '/src/assets/images/gerobak_bakery_pastry_1793275254248.jpg', name: 'Golden Crust Bakery Cart' },
-    { url: '/src/assets/images/gerobak_boba_tea_1793275672520.jpg', name: 'Fresh Boba & Mocktail Station' },
-    { url: '/src/assets/images/bontang_local_culinary_1793275672214.jpg', name: 'Kuliner Lokal Bontang' },
-  ];
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [confirmDeleteItem, setConfirmDeleteItem] = useState<CMSMediaItem | null>(null);
 
   const loadMedia = async () => {
     setIsLoading(true);
@@ -67,13 +58,14 @@ export const MediaLibraryModal: React.FC<MediaLibraryModalProps> = ({
     if (!file) return;
 
     setIsUploading(true);
+    setErrorMessage(null);
     try {
       const uploaded = await uploadMediaFile(file, altTextInput || file.name);
       setMediaList([uploaded, ...mediaList]);
       setActiveTab('library');
     } catch (err) {
       console.error('Upload failed:', err);
-      alert('Gagal mengunggah file. Pastikan ukuran file sesuai dan koneksi stabil.');
+      setErrorMessage('Gagal mengunggah file. Pastikan ukuran file sesuai dan koneksi stabil.');
     } finally {
       setIsUploading(false);
       setAltTextInput('');
@@ -84,6 +76,7 @@ export const MediaLibraryModal: React.FC<MediaLibraryModalProps> = ({
     e.preventDefault();
     if (!urlInput) return;
     setIsUploading(true);
+    setErrorMessage(null);
     try {
       const filename = urlInput.split('/').pop() || 'Gambar Media';
       const item = await saveMediaUrlDirectly(urlInput, filename, altTextInput || filename);
@@ -92,19 +85,26 @@ export const MediaLibraryModal: React.FC<MediaLibraryModalProps> = ({
       setAltTextInput('');
       setActiveTab('library');
     } catch (err) {
-      alert('Gagal menambahkan tautan gambar.');
+      setErrorMessage('Gagal menambahkan tautan gambar.');
     } finally {
       setIsUploading(false);
     }
   };
 
-  const handleDelete = async (item: CMSMediaItem) => {
-    if (!window.confirm(`Hapus gambar "${item.filename}"?`)) return;
+  const handleDelete = (item: CMSMediaItem) => {
+    setConfirmDeleteItem(item);
+  };
+
+  const executeConfirmedDelete = async () => {
+    if (!confirmDeleteItem) return;
+    const item = confirmDeleteItem;
+    setConfirmDeleteItem(null);
+    setErrorMessage(null);
     try {
       await deleteMediaItem(item);
       setMediaList(mediaList.filter((m) => m.id !== item.id));
     } catch (err) {
-      alert('Gagal menghapus gambar.');
+      setErrorMessage('Gagal menghapus gambar.');
     }
   };
 
@@ -145,7 +145,7 @@ export const MediaLibraryModal: React.FC<MediaLibraryModalProps> = ({
                 : 'text-[#A4A7AE] hover:text-white hover:bg-white/5'
             }`}
           >
-            Pustaka Media ({mediaList.length + defaultPresets.length})
+            Pustaka Media ({mediaList.length})
           </button>
           <button
             onClick={() => setActiveTab('upload')}
@@ -171,51 +171,55 @@ export const MediaLibraryModal: React.FC<MediaLibraryModalProps> = ({
           </button>
         </div>
 
+        {errorMessage && (
+          <div className="mx-6 mt-3 p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-semibold flex items-center justify-between">
+            <span>{errorMessage}</span>
+            <button type="button" onClick={() => setErrorMessage(null)} className="text-white/60 hover:text-white">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
+        {confirmDeleteItem && (
+          <div className="mx-6 mt-3 p-3.5 rounded-xl bg-[#0B132B] border border-red-500/40 flex items-center justify-between gap-4">
+            <span className="text-xs text-white">
+              Hapus gambar <strong className="text-[#D6B46A]">"{confirmDeleteItem.filename}"</strong>?
+            </span>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => setConfirmDeleteItem(null)}
+                className="px-3 py-1 text-xs text-[#A4A7AE] hover:text-white rounded border border-white/10"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={executeConfirmedDelete}
+                className="px-3 py-1 text-xs font-bold bg-red-500 hover:bg-red-600 text-white rounded"
+              >
+                Ya, Hapus
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Content Area */}
         <div className="flex-1 overflow-y-auto p-6">
           {activeTab === 'library' && (
             <div className="space-y-6">
-              {/* Presets Gallery */}
-              <div>
-                <h4 className="text-xs uppercase tracking-wider font-semibold text-[#D6B46A] mb-3">
-                  Aset Studio Bawaan
-                </h4>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  {defaultPresets.map((preset, idx) => (
-                    <div
-                      key={idx}
-                      className="group relative bg-[#0B132B] border border-white/10 rounded-xl overflow-hidden hover:border-[#D6B46A] transition-all cursor-pointer"
-                    >
-                      <div className="aspect-[4/3] overflow-hidden">
-                        <img
-                          src={preset.url}
-                          alt={preset.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                        />
-                      </div>
-                      <div className="p-2.5">
-                        <p className="text-xs font-semibold text-white truncate">{preset.name}</p>
-                        <button
-                          onClick={() => {
-                            onSelectImage(preset.url);
-                            onClose();
-                          }}
-                          className="mt-2 w-full py-1 text-[11px] font-semibold bg-[#D6B46A] text-[#101827] rounded-md hover:bg-[#C5A154] flex items-center justify-center gap-1"
-                        >
-                          <Check className="w-3 h-3" />
-                          <span>Pilih Gambar</span>
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+              {isLoading ? (
+                <div className="py-16 flex justify-center text-[#A4A7AE]">
+                  <Loader2 className="w-8 h-8 animate-spin text-[#D6B46A]" />
                 </div>
-              </div>
-
-              {/* Uploaded items */}
-              {mediaList.length > 0 && (
+              ) : mediaList.length === 0 ? (
+                <div className="py-16 text-center text-xs text-[#A4A7AE]">
+                  Belum ada berkas media di Cloud Firestore. Unggah gambar baru atau tautkan URL gambar.
+                </div>
+              ) : (
                 <div>
                   <h4 className="text-xs uppercase tracking-wider font-semibold text-[#D6B46A] mb-3">
-                    Unggahan Cloud Firestore / Storage
+                    Koleksi Media Cloud Firestore & Storage
                   </h4>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                     {mediaList.map((item) => (

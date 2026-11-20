@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { getSiteSection, saveSiteSection } from '../../services/cmsService';
-import { BRAND_CONFIG, FAQItem } from '../../config/brand';
+import { FAQItem } from '../../config/brand';
 import { Plus, Trash2, Edit, Save, X, Loader2, HelpCircle, CheckCircle2 } from 'lucide-react';
 
 interface FaqEditorProps {
@@ -21,15 +21,19 @@ export const FaqEditor: React.FC<FaqEditorProps> = ({ onRefreshPublicSite }) => 
   const [answer, setAnswer] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [confirmDeleteIdx, setConfirmDeleteIdx] = useState<number | null>(null);
 
   useEffect(() => {
     const loadFaqs = async () => {
       setIsLoading(true);
       try {
-        const data = await getSiteSection('faqs', { items: BRAND_CONFIG.faqs });
+        const data = await getSiteSection<{ items?: FAQItem[] }>('faqs');
         if (data?.items) {
           setFaqs(data.items);
         }
+      } catch (err: any) {
+        setErrorMsg('Gagal memuat FAQ dari Firestore: ' + (err.message || ''));
       } finally {
         setIsLoading(false);
       }
@@ -63,6 +67,7 @@ export const FaqEditor: React.FC<FaqEditorProps> = ({ onRefreshPublicSite }) => 
     }
 
     setIsSaving(true);
+    setErrorMsg(null);
     try {
       await saveSiteSection('faqs', {
         title: 'Pertanyaan yang Sering Diajukan',
@@ -74,16 +79,23 @@ export const FaqEditor: React.FC<FaqEditorProps> = ({ onRefreshPublicSite }) => 
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (err: any) {
-      alert('Gagal menyimpan FAQ: ' + err.message);
+      setErrorMsg('Gagal menyimpan FAQ: ' + err.message);
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleDelete = async (idx: number) => {
-    if (!window.confirm('Hapus butir pertanyaan ini?')) return;
+  const handleDelete = (idx: number) => {
+    setConfirmDeleteIdx(idx);
+  };
+
+  const executeConfirmedDelete = async () => {
+    if (confirmDeleteIdx === null) return;
+    const idx = confirmDeleteIdx;
+    setConfirmDeleteIdx(null);
     const updated = faqs.filter((_, i) => i !== idx);
     setIsLoading(true);
+    setErrorMsg(null);
     try {
       await saveSiteSection('faqs', {
         title: 'Pertanyaan yang Sering Diajukan',
@@ -91,8 +103,10 @@ export const FaqEditor: React.FC<FaqEditorProps> = ({ onRefreshPublicSite }) => 
       });
       setFaqs(updated);
       await onRefreshPublicSite();
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
     } catch (err) {
-      alert('Gagal menghapus FAQ.');
+      setErrorMsg('Gagal menghapus FAQ.');
     } finally {
       setIsLoading(false);
     }
@@ -123,6 +137,44 @@ export const FaqEditor: React.FC<FaqEditorProps> = ({ onRefreshPublicSite }) => 
         <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold flex items-center gap-2">
           <CheckCircle2 className="w-4 h-4" />
           <span>FAQ berhasil diperbarui di Cloud Firestore</span>
+        </div>
+      )}
+
+      {errorMsg && (
+        <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-semibold flex items-center justify-between">
+          <span>{errorMsg}</span>
+          <button type="button" onClick={() => setErrorMsg(null)} className="text-white/60 hover:text-white">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {confirmDeleteIdx !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-[#101827] border border-white/10 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+            <h3 className="text-base font-bold text-white font-['Manrope']">
+              Hapus Pertanyaan FAQ?
+            </h3>
+            <p className="text-xs text-[#A4A7AE] leading-relaxed">
+              Yakin ingin menghapus pertanyaan <strong className="text-white">"{faqs[confirmDeleteIdx]?.question}"</strong>?
+            </p>
+            <div className="pt-2 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setConfirmDeleteIdx(null)}
+                className="px-4 py-2 text-xs text-[#A4A7AE] hover:text-white rounded-lg border border-white/10"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={executeConfirmedDelete}
+                className="px-4 py-2 text-xs font-bold uppercase tracking-wider bg-red-500 hover:bg-red-600 text-white rounded-lg"
+              >
+                Ya, Hapus
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -223,9 +275,16 @@ export const FaqEditor: React.FC<FaqEditorProps> = ({ onRefreshPublicSite }) => 
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="px-5 py-2.5 bg-[#D6B46A] text-[#101827] font-bold text-xs uppercase tracking-wider rounded-xl hover:bg-[#C5A154]"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#D6B46A] text-[#101827] font-bold text-xs uppercase tracking-wider rounded-xl hover:bg-[#C5A154] disabled:opacity-50"
                 >
-                  Simpan Tanya Jawab
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Menyimpan...</span>
+                    </>
+                  ) : (
+                    <span>Simpan Tanya Jawab</span>
+                  )}
                 </button>
               </div>
             </form>

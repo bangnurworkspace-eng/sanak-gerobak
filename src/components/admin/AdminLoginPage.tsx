@@ -14,6 +14,7 @@ import {
   Loader2,
   LogIn,
   AlertCircle,
+  CheckCircle2,
 } from 'lucide-react';
 import { BRAND_CONFIG } from '../../config/brand';
 
@@ -39,7 +40,9 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onBackToSite, on
   const [isLoading, setIsLoading] = useState(false);
   const [resetModalOpen, setResetModalOpen] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
-  const [resetStatus, setResetStatus] = useState<string | null>(null);
+  const [resetNewPass, setResetNewPass] = useState('');
+  const [resetStatus, setResetStatus] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [isResetting, setIsResetting] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
@@ -47,7 +50,7 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onBackToSite, on
     setLocalError(null);
     clearError();
 
-    if (!loginEmail || !loginPassword) {
+    if (!loginEmail.trim() || !loginPassword) {
       setLocalError('Mohon masukkan alamat email dan kata sandi Anda.');
       return;
     }
@@ -65,15 +68,41 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onBackToSite, on
 
   const handlePasswordReset = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!resetEmail) {
-      setResetStatus('Mohon ketikkan email Anda.');
+    setResetStatus(null);
+
+    if (!resetEmail.trim()) {
+      setResetStatus({ type: 'error', text: 'Mohon ketikkan email administrator Anda.' });
       return;
     }
+
+    if (resetNewPass && resetNewPass.length < 6) {
+      setResetStatus({ type: 'error', text: 'Kata sandi baru minimal 6 karakter.' });
+      return;
+    }
+
+    setIsResetting(true);
     try {
-      await resetPassword(resetEmail);
-      setResetStatus('Tautan resmi pemulihan kata sandi telah dikirimkan ke email Anda. Silakan periksa inbox atau spam.');
+      await resetPassword(resetEmail, resetNewPass || undefined);
+      if (resetNewPass) {
+        setResetStatus({
+          type: 'success',
+          text: 'Kata sandi administrator berhasil diperbarui. Silakan tutup jendela ini dan masuk dengan kata sandi baru Anda.',
+        });
+        setLoginEmail(resetEmail.trim());
+        setLoginPassword(resetNewPass);
+      } else {
+        setResetStatus({
+          type: 'success',
+          text: 'Pemulihan kata sandi berhasil diproses. Anda kini dapat masuk menggunakan kata sandi baru.',
+        });
+      }
     } catch (err: any) {
-      setResetStatus(err.message || 'Gagal mengirim email reset.');
+      setResetStatus({
+        type: 'error',
+        text: err.message || 'Gagal memproses pemulihan kata sandi.',
+      });
+    } finally {
+      setIsResetting(false);
     }
   };
 
@@ -86,6 +115,7 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onBackToSite, on
       {/* Top back navigation */}
       <div className="absolute top-6 left-6 z-10">
         <button
+          type="button"
           onClick={onBackToSite}
           className="inline-flex items-center gap-2 text-xs uppercase tracking-wider text-[#A4A7AE] hover:text-[#D6B46A] transition-colors px-3 py-2 rounded-lg bg-white/5 border border-white/10 hover:border-[#D6B46A]/30 backdrop-blur-md"
         >
@@ -101,6 +131,8 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onBackToSite, on
             <img
               src={BRAND_CONFIG.logoUrl}
               alt="Logo SANAK GEROBAK"
+              width={80}
+              height={80}
               className="w-full h-full object-cover rounded-xl"
             />
           </div>
@@ -132,7 +164,7 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onBackToSite, on
             </div>
           )}
 
-          {/* MASUK ADMIN (NORMAL LOGIN) */}
+          {/* MASUK ADMIN */}
           <div>
             <form onSubmit={handleLoginSubmit} className="space-y-4">
               <div>
@@ -164,6 +196,7 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onBackToSite, on
                     onClick={() => {
                       setResetStatus(null);
                       setResetEmail(loginEmail);
+                      setResetNewPass('');
                       setResetModalOpen(true);
                     }}
                     className="text-xs text-[#D6B46A] hover:underline"
@@ -187,6 +220,7 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onBackToSite, on
                     type="button"
                     onClick={() => setShowLoginPassword(!showLoginPassword)}
                     className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-[#A4A7AE] hover:text-white"
+                    aria-label="Tampilkan atau sembunyikan kata sandi"
                   >
                     {showLoginPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -221,9 +255,10 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onBackToSite, on
           <div className="bg-[#101827] border border-white/10 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
             <div className="flex items-center justify-between pb-2 border-b border-white/10">
               <h3 className="text-base font-bold text-white font-['Manrope']">
-                Pemulihan Kata Sandi
+                Atur Ulang Kata Sandi Admin
               </h3>
               <button
+                type="button"
                 onClick={() => setResetModalOpen(false)}
                 className="text-[#A4A7AE] hover:text-white text-lg font-bold"
               >
@@ -232,24 +267,55 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onBackToSite, on
             </div>
 
             <p className="text-xs text-[#A4A7AE] leading-relaxed">
-              Masukkan alamat email admin Anda yang terdaftar. Sistem akan mengirimkan tautan resmi untuk mengatur ulang kata sandi ke inbox Anda.
+              Masukkan alamat email administrator yang terdaftar beserta kata sandi baru untuk memperbarui akses masuk CMS Anda.
             </p>
 
             {resetStatus && (
-              <div className="p-3 rounded-lg bg-[#D6B46A]/10 border border-[#D6B46A]/30 text-[#D6B46A] text-xs">
-                {resetStatus}
+              <div
+                className={`p-3 rounded-lg border text-xs flex items-start gap-2 ${
+                  resetStatus.type === 'success'
+                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                    : 'bg-red-500/10 border-red-500/30 text-red-300'
+                }`}
+              >
+                {resetStatus.type === 'success' ? (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                )}
+                <span>{resetStatus.text}</span>
               </div>
             )}
 
-            <form onSubmit={handlePasswordReset} className="space-y-4">
-              <input
-                type="email"
-                value={resetEmail}
-                onChange={(e) => setResetEmail(e.target.value)}
-                placeholder="admin@sanakgerobak.com"
-                required
-                className="w-full px-4 py-2.5 bg-[#0B132B] border border-white/10 rounded-xl text-sm text-white placeholder-white/30 focus:outline-none focus:border-[#D6B46A]"
-              />
+            <form onSubmit={handlePasswordReset} className="space-y-3.5">
+              <div>
+                <label className="block text-[11px] font-semibold text-[#FDFBF7] uppercase tracking-wider mb-1">
+                  Email Administrator *
+                </label>
+                <input
+                  type="email"
+                  value={resetEmail}
+                  onChange={(e) => setResetEmail(e.target.value)}
+                  placeholder="admin@sanakgerobak.com"
+                  required
+                  className="w-full px-4 py-2.5 bg-[#0B132B] border border-white/10 rounded-xl text-sm text-white placeholder-white/30 focus:outline-none focus:border-[#D6B46A]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-[#FDFBF7] uppercase tracking-wider mb-1">
+                  Kata Sandi Baru (Minimal 6 Karakter) *
+                </label>
+                <input
+                  type="password"
+                  value={resetNewPass}
+                  onChange={(e) => setResetNewPass(e.target.value)}
+                  placeholder="••••••••••••"
+                  required
+                  minLength={6}
+                  className="w-full px-4 py-2.5 bg-[#0B132B] border border-white/10 rounded-xl text-sm text-white placeholder-white/30 focus:outline-none focus:border-[#D6B46A]"
+                />
+              </div>
 
               <div className="flex items-center justify-end gap-3 pt-2">
                 <button
@@ -261,9 +327,17 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onBackToSite, on
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 bg-[#D6B46A] text-[#101827] font-semibold text-xs rounded-xl hover:bg-[#C5A154] cursor-pointer"
+                  disabled={isResetting}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#D6B46A] text-[#101827] font-semibold text-xs rounded-xl hover:bg-[#C5A154] disabled:opacity-50 cursor-pointer"
                 >
-                  Kirim Email Reset
+                  {isResetting ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Memperbarui...</span>
+                    </>
+                  ) : (
+                    <span>Simpan Kata Sandi Baru</span>
+                  )}
                 </button>
               </div>
             </form>

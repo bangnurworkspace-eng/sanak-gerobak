@@ -131,6 +131,10 @@
     "/media_library/{mediaId}": {
       "schema": "MediaItem",
       "description": "Media library assets records"
+    },
+    "/cms_sessions/{sessionId}": {
+      "schema": "AdminUser",
+      "description": "Cloud-persisted CMS admin sessions"
     }
   }
 }

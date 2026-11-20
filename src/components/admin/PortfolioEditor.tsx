@@ -24,13 +24,20 @@ export const PortfolioEditor: React.FC<PortfolioEditorProps> = ({ onRefreshPubli
   const [currentItem, setCurrentItem] = useState<CMSPortfolioItem | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [mediaModalOpen, setMediaModalOpen] = useState(false);
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [confirmDeleteTarget, setConfirmDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+
+  const showFeedback = (type: 'success' | 'error', message: string) => {
+    setFeedback({ type, message });
+    setTimeout(() => setFeedback(null), 4000);
+  };
 
   // Form Fields
   const [title, setTitle] = useState('');
   const [clientName, setClientName] = useState('');
   const [location, setLocation] = useState('Bontang, Kalimantan Timur');
   const [category, setCategory] = useState('Coffee Cart');
-  const [image, setImage] = useState('/src/assets/images/gerobak_coffee_cart_1793275252747.jpg');
+  const [image, setImage] = useState('/assets/images/gerobak_coffee_cart_1793275252747.jpg');
   const [year, setYear] = useState('2024');
   const [description, setDescription] = useState('');
   const [isRealProject, setIsRealProject] = useState<boolean>(true); // Proyek Nyata vs Inspirasi Desain
@@ -56,7 +63,7 @@ export const PortfolioEditor: React.FC<PortfolioEditorProps> = ({ onRefreshPubli
     setClientName('');
     setLocation('Kota Bontang, Kalimantan Timur');
     setCategory('Coffee Cart');
-    setImage('/src/assets/images/gerobak_coffee_cart_1793275252747.jpg');
+    setImage('/assets/images/gerobak_coffee_cart_1793275252747.jpg');
     setYear(new Date().getFullYear().toString());
     setDescription('');
     setIsRealProject(true);
@@ -102,22 +109,30 @@ export const PortfolioEditor: React.FC<PortfolioEditorProps> = ({ onRefreshPubli
       setModalOpen(false);
       await loadData();
       await onRefreshPublicSite();
+      showFeedback('success', `Portofolio "${title}" berhasil disimpan.`);
     } catch (err: any) {
-      alert('Gagal menyimpan portofolio: ' + err.message);
+      showFeedback('error', 'Gagal menyimpan portofolio: ' + err.message);
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleDelete = async (id: string, name: string) => {
-    if (!window.confirm(`Hapus portofolio "${name}"?`)) return;
+  const handleDelete = (id: string, name: string) => {
+    setConfirmDeleteTarget({ id, name });
+  };
+
+  const executeConfirmedDelete = async () => {
+    if (!confirmDeleteTarget) return;
+    const { id, name } = confirmDeleteTarget;
+    setConfirmDeleteTarget(null);
     setIsLoading(true);
     try {
       await deletePortfolioItem(id);
       await loadData();
       await onRefreshPublicSite();
+      showFeedback('success', `Portofolio "${name}" berhasil dihapus.`);
     } catch (err) {
-      alert('Gagal menghapus item.');
+      showFeedback('error', 'Gagal menghapus item.');
     } finally {
       setIsLoading(false);
     }
@@ -143,6 +158,57 @@ export const PortfolioEditor: React.FC<PortfolioEditorProps> = ({ onRefreshPubli
           <span>Tambah Proyek Portofolio</span>
         </button>
       </div>
+
+      {feedback && (
+        <div
+          className={`p-3.5 rounded-xl border text-xs font-semibold flex items-center justify-between ${
+            feedback.type === 'success'
+              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+              : 'bg-red-500/10 border-red-500/30 text-red-400'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 shrink-0" />
+            <span>{feedback.message}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setFeedback(null)}
+            className="text-white/60 hover:text-white"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {confirmDeleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-[#101827] border border-white/10 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+            <h3 className="text-base font-bold text-white font-['Manrope']">
+              Hapus Item Portofolio?
+            </h3>
+            <p className="text-xs text-[#A4A7AE] leading-relaxed">
+              Yakin ingin menghapus portofolio <strong className="text-white">"{confirmDeleteTarget.name}"</strong>?
+            </p>
+            <div className="pt-2 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setConfirmDeleteTarget(null)}
+                className="px-4 py-2 text-xs text-[#A4A7AE] hover:text-white rounded-lg border border-white/10"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={executeConfirmedDelete}
+                className="px-4 py-2 text-xs font-bold uppercase tracking-wider bg-red-500 hover:bg-red-600 text-white rounded-lg"
+              >
+                Ya, Hapus
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {isLoading ? (
         <div className="py-20 flex justify-center text-[#A4A7AE]">
@@ -378,6 +444,11 @@ export const PortfolioEditor: React.FC<PortfolioEditorProps> = ({ onRefreshPubli
                     <span>Pilih Foto</span>
                   </button>
                 </div>
+                {image && (
+                  <div className="mt-2 w-36 h-24 rounded-lg overflow-hidden border border-white/10 bg-[#0B132B]">
+                    <img src={image} alt="Pratinjau Portofolio" className="w-full h-full object-cover" />
+                  </div>
+                )}
               </div>
 
               <div>
@@ -404,9 +475,19 @@ export const PortfolioEditor: React.FC<PortfolioEditorProps> = ({ onRefreshPubli
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="px-5 py-2.5 bg-[#D6B46A] text-[#101827] font-bold text-xs uppercase tracking-wider rounded-xl hover:bg-[#C5A154]"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#D6B46A] text-[#101827] font-bold text-xs uppercase tracking-wider rounded-xl hover:bg-[#C5A154] disabled:opacity-50"
                 >
-                  Simpan Portofolio
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Menyimpan...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      <span>Simpan Portofolio</span>
+                    </>
+                  )}
                 </button>
               </div>
 

@@ -13,48 +13,27 @@ interface ServicesEditorProps {
 }
 
 export const ServicesEditor: React.FC<ServicesEditorProps> = ({ onRefreshPublicSite }) => {
-  const [title, setTitle] = useState('Dari Ide Menjadi Identitas Usaha.');
-  const [subtitle, setSubtitle] = useState(
-    'Layanan terintegrasi mulai dari perancangan konsep visual hingga unit gerobak siap pakai untuk menyambut pelanggan pertama Anda.'
-  );
-  const [services, setServices] = useState<ServiceItem[]>([
-    {
-      id: 'custom-cart',
-      number: '01',
-      title: 'Pembuatan Gerobak Custom',
-      description: 'Pembuatan gerobak jualan outdoor & indoor dengan spesifikasi material tahan karat, kelistrikan terintegrasi, dan kompartemen ergonomis.',
-      deliverables: ['Rangka baja & plat galvanis tahan karat', 'Meja kerja food-grade stainless / solid wood', 'Instalasi lampu LED & saklar terpadu'],
-    },
-    {
-      id: 'booth-kiosk',
-      number: '02',
-      title: 'Booth & Kios UMKM Modular',
-      description: 'Pembangunan booth semi-permanen dan kios kontainer berdimensi fleksibel untuk mall, food court, maupun lahan sewa outdoor.',
-      deliverables: ['Sistem buka-tutup hidrolik / kanopi lipat', 'Struktur modular mudah dipindahkan', 'Pilihan finishing powder coating anti-cuaca'],
-    },
-    {
-      id: 'branding-signage',
-      number: '03',
-      title: 'Visual Branding & Signage',
-      description: 'Penyelarasan palet warna brand, neon flex sign, sticker vinyl laminasi doff/glossy, dan papan nama usaha yang mencolok.',
-      deliverables: ['Desain logo & penempatan identitas visual', 'Neon flex / neon box akrilik hemat daya', 'Sticker decal tahan sinar UV & hujan'],
-    },
-  ]);
+  const [title, setTitle] = useState('');
+  const [subtitle, setSubtitle] = useState('');
+  const [services, setServices] = useState<ServiceItem[]>([]);
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
     const loadServices = async () => {
       setIsLoading(true);
       try {
-        const data = await getSiteSection('services', null as any);
+        const data = await getSiteSection<{ title?: string; subtitle?: string; items?: ServiceItem[] }>('services');
         if (data) {
           if (data.title) setTitle(data.title);
           if (data.subtitle) setSubtitle(data.subtitle);
-          if (data.items) setServices(data.items);
+          if (Array.isArray(data.items)) setServices(data.items);
         }
+      } catch (err: any) {
+        setErrorMsg('Gagal memuat layanan dari Firestore: ' + (err.message || ''));
       } finally {
         setIsLoading(false);
       }
@@ -84,6 +63,7 @@ export const ServicesEditor: React.FC<ServicesEditorProps> = ({ onRefreshPublicS
     e.preventDefault();
     setIsSaving(true);
     setSaveSuccess(false);
+    setErrorMsg(null);
     try {
       await saveSiteSection('services', {
         title,
@@ -94,7 +74,7 @@ export const ServicesEditor: React.FC<ServicesEditorProps> = ({ onRefreshPublicS
       await onRefreshPublicSite();
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (err: any) {
-      alert('Gagal menyimpan layanan: ' + err.message);
+      setErrorMsg('Gagal menyimpan layanan: ' + err.message);
     } finally {
       setIsSaving(false);
     }
@@ -113,12 +93,19 @@ export const ServicesEditor: React.FC<ServicesEditorProps> = ({ onRefreshPublicS
           </p>
         </div>
 
-        {saveSuccess && (
-          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold">
-            <CheckCircle2 className="w-4 h-4" />
-            <span>Tersimpan di Cloud</span>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          {saveSuccess && (
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold">
+              <CheckCircle2 className="w-4 h-4" />
+              <span>Tersimpan di Cloud</span>
+            </div>
+          )}
+          {errorMsg && (
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-semibold">
+              <span>{errorMsg}</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {isLoading ? (

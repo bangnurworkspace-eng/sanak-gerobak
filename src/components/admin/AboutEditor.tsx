@@ -4,35 +4,35 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { getSiteSection, saveSiteSection } from '../../services/cmsService';
-import { BRAND_CONFIG } from '../../config/brand';
-import { Save, Loader2, CheckCircle2, ShieldCheck } from 'lucide-react';
+import { getSiteSection, saveSiteSection, CMSAboutSection } from '../../services/cmsService';
+import { Save, Loader2, CheckCircle2 } from 'lucide-react';
 
 interface AboutEditorProps {
   onRefreshPublicSite: () => Promise<void>;
 }
 
 export const AboutEditor: React.FC<AboutEditorProps> = ({ onRefreshPublicSite }) => {
-  const [principles, setPrinciples] = useState(BRAND_CONFIG.principles);
-  const [localTitle, setLocalTitle] = useState('Dari Bontang, untuk Semangat Usaha Kalimantan Timur.');
-  const [localDesc, setLocalDesc] = useState(
-    'Kami memahami denyut bisnis lokal di Kalimantan Timur. Mulai dari pesisir Kota Bontang hingga pusat keramaian Samarinda dan Balikpapan, setiap unit gerobak dirancang untuk tahan terhadap iklim tropis dan tampil memikat bagi pelanggan lokal.'
-  );
+  const [principles, setPrinciples] = useState<CMSAboutSection['principles']>([]);
+  const [localTitle, setLocalTitle] = useState('');
+  const [localDesc, setLocalDesc] = useState('');
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
     const loadAbout = async () => {
       setIsLoading(true);
       try {
-        const data = await getSiteSection('about', null as any);
+        const data = await getSiteSection<CMSAboutSection>('about');
         if (data) {
-          if (data.principles) setPrinciples(data.principles);
+          if (Array.isArray(data.principles)) setPrinciples(data.principles);
           if (data.localTitle) setLocalTitle(data.localTitle);
           if (data.localDesc) setLocalDesc(data.localDesc);
         }
+      } catch (err: any) {
+        setErrorMsg('Gagal memuat data dari Firestore: ' + (err.message || ''));
       } finally {
         setIsLoading(false);
       }
@@ -44,6 +44,7 @@ export const AboutEditor: React.FC<AboutEditorProps> = ({ onRefreshPublicSite })
     e.preventDefault();
     setIsSaving(true);
     setSaveSuccess(false);
+    setErrorMsg(null);
     try {
       await saveSiteSection('about', {
         principles,
@@ -54,7 +55,7 @@ export const AboutEditor: React.FC<AboutEditorProps> = ({ onRefreshPublicSite })
       await onRefreshPublicSite();
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (err: any) {
-      alert('Gagal menyimpan Tentang Kami: ' + err.message);
+      setErrorMsg('Gagal menyimpan Tentang Kami: ' + err.message);
     } finally {
       setIsSaving(false);
     }
@@ -73,12 +74,19 @@ export const AboutEditor: React.FC<AboutEditorProps> = ({ onRefreshPublicSite })
           </p>
         </div>
 
-        {saveSuccess && (
-          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold">
-            <CheckCircle2 className="w-4 h-4" />
-            <span>Tersimpan di Cloud</span>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          {saveSuccess && (
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold">
+              <CheckCircle2 className="w-4 h-4" />
+              <span>Tersimpan di Cloud</span>
+            </div>
+          )}
+          {errorMsg && (
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-semibold">
+              <span>{errorMsg}</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {isLoading ? (

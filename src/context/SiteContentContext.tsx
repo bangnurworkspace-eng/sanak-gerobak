@@ -8,101 +8,111 @@ import {
   CMSProduct,
   CMSPortfolioItem,
   CMSCategory,
+  CMSHeroSection,
+  CMSAboutSection,
+  CMSSettings,
   getProducts,
   getPortfolio,
   getCategories,
   getSiteSection,
   seedInitialDataIfEmpty,
 } from '../services/cmsService';
-import { BRAND_CONFIG } from '../config/brand';
-import { CATALOG_DATA, CatalogItem } from '../config/catalogData';
+import { testFirestoreConnection } from '../lib/firebase';
+import { resolveImageUrl, STUDIO_IMAGE_ASSETS } from '../utils/assets';
+import { setLiveWhatsAppConfig } from '../utils/whatsapp';
 
 interface SiteContentContextType {
   products: CMSProduct[];
   portfolio: CMSPortfolioItem[];
   categories: CMSCategory[];
-  heroContent: {
-    title: string;
-    tagline: string;
-    supportingText: string;
-    heroImage: string;
-    badgeText: string;
-  };
-  contactInfo: typeof BRAND_CONFIG.contact;
+  heroContent: CMSHeroSection | null;
+  aboutContent: CMSAboutSection | null;
+  contactInfo: CMSSettings['contact'] | null;
   faqList: { question: string; answer: string }[];
   isLoading: boolean;
+  loadError: string | null;
   refreshContent: () => Promise<void>;
 }
 
 const SiteContentContext = createContext<SiteContentContextType | undefined>(undefined);
 
 export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [products, setProducts] = useState<CMSProduct[]>(
-    CATALOG_DATA.map((item, idx) => ({ ...item, status: 'published', sortOrder: idx }))
-  );
+  const [products, setProducts] = useState<CMSProduct[]>([]);
   const [portfolio, setPortfolio] = useState<CMSPortfolioItem[]>([]);
   const [categories, setCategories] = useState<CMSCategory[]>([]);
-  const [heroContent, setHeroContent] = useState({
-    title: 'Solusi Gerobak & Booth Usaha Berkelas.',
-    tagline: BRAND_CONFIG.officialTagline,
-    supportingText: 'Kami merancang dan memproduksi gerobak jualan serta booth usaha modern dengan material kokoh, tata ruang fungsional, dan estetika yang memikat pelanggan.',
-    heroImage: '/src/assets/images/hero_gerobak_bontang_1793275251642.jpg',
-    badgeText: 'Spesialis Gerobak & Booth Custom Bontang',
-  });
-  const [contactInfo, setContactInfo] = useState(BRAND_CONFIG.contact);
-  const [faqList, setFaqList] = useState(BRAND_CONFIG.faqs);
+  const [heroContent, setHeroContent] = useState<CMSHeroSection | null>(null);
+  const [aboutContent, setAboutContent] = useState<CMSAboutSection | null>(null);
+  const [contactInfo, setContactInfo] = useState<CMSSettings['contact'] | null>(null);
+  const [faqList, setFaqList] = useState<{ question: string; answer: string }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    testFirestoreConnection().catch(() => {});
+  }, []);
 
   const loadContent = useCallback(async () => {
     setIsLoading(true);
+    setLoadError(null);
     try {
-      // 1. Fetch live products from Firestore (falls back to local catalog if empty)
-      const fetchedProducts = await getProducts(false);
-      if (fetchedProducts && fetchedProducts.length > 0) {
-        setProducts(fetchedProducts);
+      await seedInitialDataIfEmpty();
+
+      const [fetchedProducts, fetchedCats, fetchedPort, hero, aboutData, settings, faqsData] =
+        await Promise.all([
+          getProducts(false),
+          getCategories(),
+          getPortfolio(false),
+          getSiteSection<CMSHeroSection | null>('hero', null),
+          getSiteSection<CMSAboutSection | null>('about', null),
+          getSiteSection<CMSSettings | null>('settings', null),
+          getSiteSection<{ items?: { question: string; answer: string }[] } | null>('faqs', null),
+        ]);
+
+      setProducts(fetchedProducts);
+      setCategories(fetchedCats);
+      setPortfolio(fetchedPort);
+
+      if (hero) {
+        setHeroContent({
+          ...hero,
+          heroImage: resolveImageUrl(hero.heroImage, STUDIO_IMAGE_ASSETS.heroPremium),
+        });
+      } else {
+        setHeroContent(null);
       }
 
-      // 2. Fetch categories
-      const fetchedCats = await getCategories();
-      if (fetchedCats) {
-        setCategories(fetchedCats);
+      setAboutContent(aboutData || null);
+
+      if (settings) {
+        if (typeof document !== 'undefined') {
+          if (settings.siteTitle) {
+            document.title = settings.siteTitle;
+          }
+          if (settings.metaDescription) {
+            const metaDesc = document.querySelector('meta[name="description"]');
+            if (metaDesc) metaDesc.setAttribute('content', settings.metaDescription);
+          }
+        }
+
+        if (settings.contact) {
+          setContactInfo(settings.contact);
+          setLiveWhatsAppConfig({
+            whatsappNumber: settings.contact.whatsappNumber,
+            officialTagline: settings.tagline,
+          });
+        } else {
+          setContactInfo(null);
+        }
       }
 
-      // 3. Fetch portfolio items
-      const fetchedPort = await getPortfolio(false);
-      if (fetchedPort && fetchedPort.length > 0) {
-        setPortfolio(fetchedPort);
+      if (faqsData && Array.isArray(faqsData.items)) {
+        setFaqList(faqsData.items);
+      } else {
+        setFaqList([]);
       }
-
-      // 4. Fetch Hero Section
-      const hero = await getSiteSection('hero', heroContent);
-      if (hero) setHeroContent(hero);
-
-      // 5. Fetch Settings / Contact
-      const settings = await getSiteSection('settings', { contact: BRAND_CONFIG.contact });
-      if (settings?.contact) {
-        const isOldPlaceholder = settings.contact.whatsappNumber === '6282154321098';
-        const resolvedContact = {
-          ...BRAND_CONFIG.contact,
-          ...settings.contact,
-          whatsappNumber: isOldPlaceholder
-            ? BRAND_CONFIG.contact.whatsappNumber
-            : settings.contact.whatsappNumber || BRAND_CONFIG.contact.whatsappNumber,
-          whatsappDisplay: isOldPlaceholder
-            ? BRAND_CONFIG.contact.whatsappDisplay
-            : settings.contact.whatsappDisplay || BRAND_CONFIG.contact.whatsappDisplay,
-        };
-        BRAND_CONFIG.contact.whatsappNumber = resolvedContact.whatsappNumber;
-        BRAND_CONFIG.contact.whatsappDisplay = resolvedContact.whatsappDisplay;
-        setContactInfo(resolvedContact);
-      }
-
-      // 6. Fetch FAQs
-      const faqsData = await getSiteSection('faqs', { items: BRAND_CONFIG.faqs });
-      if (faqsData?.items) setFaqList(faqsData.items);
-
-    } catch (err) {
-      console.warn('[SiteContentContext] Using local configuration defaults:', err);
+    } catch (err: any) {
+      console.error('[SiteContentContext] Gagal memuat data dari Cloud Firestore:', err);
+      setLoadError(err?.message || 'Gagal memuat data dari Cloud Firestore.');
     } finally {
       setIsLoading(false);
     }
@@ -119,9 +129,11 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
         portfolio,
         categories,
         heroContent,
+        aboutContent,
         contactInfo,
         faqList,
         isLoading,
+        loadError,
         refreshContent: loadContent,
       }}
     >

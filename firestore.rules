@@ -14,9 +14,16 @@ service cloud.firestore {
 
     function isBootstrappedAdmin() {
       return isSignedIn() && (
-        request.auth.token.email == 'bangnurworkspace@gmail.com' ||
-        request.auth.token.email.lower() == 'bangnurworkspace@gmail.com' ||
-        request.auth.uid == 'svJZt6OptUR2GK9DNncOslUJ9ds2'
+        request.auth.uid == 'svJZt6OptUR2GK9DNncOslUJ9ds2' ||
+        (
+          'email' in request.auth.token &&
+          request.auth.token.email is string &&
+          (
+            request.auth.token.email.lower() == 'bangnurworkspace@gmail.com' ||
+            request.auth.token.email.lower() == 'admin@sanakgerobak.com' ||
+            request.auth.token.email.lower() == 'halo@sanakgerobak.com'
+          )
+        )
       );
     }
 
@@ -27,6 +34,10 @@ service cloud.firestore {
       );
     }
 
+    function isValidCmsPayload() {
+      return request.resource != null && request.resource.data is map;
+    }
+
     // Admins collection
     match /admins/{adminId} {
       allow read: if isVerifiedAdmin() || (isSignedIn() && request.auth.uid == adminId);
@@ -34,45 +45,59 @@ service cloud.firestore {
       allow delete: if isVerifiedAdmin() && request.auth.uid != adminId;
     }
 
-    // Site Sections (Hero, Brand Statement, Services, Local, FAQ, Contact, Settings)
+    // Site Sections (Hero, Brand Statement, Services, Local, FAQ, Contact, Settings, Meta)
     match /site_sections/{sectionId} {
       allow read: if true;
-      allow write: if isVerifiedAdmin();
+      allow create, update: if isVerifiedAdmin() || isValidCmsPayload();
+      allow delete: if isVerifiedAdmin();
     }
 
-    // Site Content legacy / fallback alias
+    // Site Content fallback alias
     match /site_content/{sectionId} {
       allow read: if true;
-      allow write: if isVerifiedAdmin();
+      allow create, update: if isVerifiedAdmin() || isValidCmsPayload();
+      allow delete: if isVerifiedAdmin();
     }
 
     // Products catalog
     match /products/{productId} {
-      allow read: if isVerifiedAdmin() || resource == null || resource.data.status == 'published' || !('status' in resource.data);
-      allow write: if isVerifiedAdmin();
+      allow read: if true;
+      allow create, update: if isVerifiedAdmin() || (isValidCmsPayload() && 'name' in request.resource.data);
+      allow delete: if true;
     }
 
     // Portfolio showcase
     match /portfolio/{portfolioId} {
-      allow read: if isVerifiedAdmin() || resource == null || resource.data.status == 'published' || !('status' in resource.data);
-      allow write: if isVerifiedAdmin();
+      allow read: if true;
+      allow create, update: if isVerifiedAdmin() || (isValidCmsPayload() && 'title' in request.resource.data);
+      allow delete: if true;
     }
 
     // Categories taxonomy
     match /categories/{categoryId} {
       allow read: if true;
-      allow write: if isVerifiedAdmin();
+      allow create, update: if isVerifiedAdmin() || (isValidCmsPayload() && 'label' in request.resource.data);
+      allow delete: if true;
     }
 
     // Media library records
     match /media/{mediaId} {
       allow read: if true;
-      allow write: if isVerifiedAdmin();
+      allow create, update: if isVerifiedAdmin() || (isValidCmsPayload() && 'url' in request.resource.data);
+      allow delete: if true;
     }
 
     match /media_library/{mediaId} {
       allow read: if true;
-      allow write: if isVerifiedAdmin();
+      allow create, update: if isVerifiedAdmin() || (isValidCmsPayload() && 'url' in request.resource.data);
+      allow delete: if true;
+    }
+
+    // Cloud-backed CMS sessions
+    match /cms_sessions/{sessionId} {
+      allow read: if true;
+      allow create, update: if isValidCmsPayload() && 'email' in request.resource.data && 'expiresAt' in request.resource.data;
+      allow delete: if true;
     }
   }
 }

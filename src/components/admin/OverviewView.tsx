@@ -21,7 +21,6 @@ import {
   FileEdit,
   Database,
   ArrowRight,
-  Sparkles,
   ShieldAlert,
   Loader2,
   RefreshCw,
@@ -65,7 +64,6 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ onNavigateTab, onRef
   }, []);
 
   const handleSeedDatabase = async () => {
-    if (!window.confirm('Inisialisasi data bawaan SANAK GEROBAK ke Cloud Firestore?')) return;
     setIsSeeding(true);
     setSeedMessage(null);
     try {
@@ -95,8 +93,8 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ onNavigateTab, onRef
         <div className="absolute top-0 right-0 w-96 h-96 bg-[#D6B46A]/10 rounded-full blur-[90px] pointer-events-none" />
 
         <div className="relative z-10 max-w-2xl space-y-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#D6B46A]/20 border border-[#D6B46A]/40 text-[#D6B46A] text-xs font-semibold">
-            <Sparkles className="w-3.5 h-3.5" />
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-[#D6B46A]/20 border border-[#D6B46A]/40 text-[#D6B46A] text-xs font-semibold">
+            <Database className="w-3.5 h-3.5" />
             <span>Panel Manajemen Konten Realtime</span>
           </div>
 

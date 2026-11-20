@@ -3,11 +3,14 @@ import App from './App.tsx';
 import './index.css';
 import { AdminAuthProvider } from './context/AdminAuthContext.tsx';
 import { SiteContentProvider } from './context/SiteContentContext.tsx';
+import { ErrorBoundary } from './components/ErrorBoundary.tsx';
 
 createRoot(document.getElementById('root')!).render(
-  <AdminAuthProvider>
-    <SiteContentProvider>
-      <App />
-    </SiteContentProvider>
-  </AdminAuthProvider>
+  <ErrorBoundary>
+    <AdminAuthProvider>
+      <SiteContentProvider>
+        <App />
+      </SiteContentProvider>
+    </AdminAuthProvider>
+  </ErrorBoundary>
 );

@@ -13,12 +13,8 @@ interface SettingsEditorProps {
 }
 
 export const SettingsEditor: React.FC<SettingsEditorProps> = ({ onRefreshPublicSite }) => {
-  const [siteTitle, setSiteTitle] = useState(
-    'SANAK GEROBAK | Desain & Pembuatan Gerobak Usaha Custom Bontang'
-  );
-  const [metaDescription, setMetaDescription] = useState(
-    'Spesialis desain dan pembuatan gerobak jualan, booth UMKM, coffee cart, dan kuliner modern di Bontang dan Kalimantan Timur. Desain Custom, Usaha Makin Berkelas.'
-  );
+  const [siteTitle, setSiteTitle] = useState('');
+  const [metaDescription, setMetaDescription] = useState('');
   const [announcement, setAnnouncement] = useState('');
   const [announcementEnabled, setAnnouncementEnabled] = useState(false);
 
@@ -31,7 +27,7 @@ export const SettingsEditor: React.FC<SettingsEditorProps> = ({ onRefreshPublicS
     const loadSettings = async () => {
       setIsLoading(true);
       try {
-        const data = await getSiteSection('settings', null as any);
+        const data = await getSiteSection<any>('settings');
         if (data) {
           if (data.siteTitle) setSiteTitle(data.siteTitle);
           if (data.metaDescription) setMetaDescription(data.metaDescription);
@@ -40,6 +36,8 @@ export const SettingsEditor: React.FC<SettingsEditorProps> = ({ onRefreshPublicS
             setAnnouncementEnabled(data.announcementEnabled);
           }
         }
+      } catch (err: any) {
+        setErrorMessage('Gagal memuat pengaturan dari Firestore: ' + (err.message || ''));
       } finally {
         setIsLoading(false);
       }

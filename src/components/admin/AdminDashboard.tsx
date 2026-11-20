@@ -16,7 +16,7 @@ import { FaqEditor } from './FaqEditor';
 import { ContactEditor } from './ContactEditor';
 import { SettingsEditor } from './SettingsEditor';
 import { MediaLibraryModal } from './MediaLibraryModal';
-import { Menu, ExternalLink, RefreshCw, Sparkles, Image as ImageIcon } from 'lucide-react';
+import { Menu, ExternalLink, RefreshCw, Image as ImageIcon, CheckCircle2 } from 'lucide-react';
 import { useAdminAuth } from '../../context/AdminAuthContext';
 import { useSiteContent } from '../../context/SiteContentContext';
 
@@ -29,6 +29,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onViewLiveSite }
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [mediaModalOpen, setMediaModalOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [copiedUrlNotice, setCopiedUrlNotice] = useState<string | null>(null);
 
   const { user } = useAdminAuth();
   const { refreshContent } = useSiteContent();
@@ -169,13 +170,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onViewLiveSite }
 
       </div>
 
+      {/* Clipboard Notice Toast */}
+      {copiedUrlNotice && (
+        <div className="fixed bottom-5 right-5 z-50 px-4 py-3 rounded-xl bg-[#101827] border border-emerald-500/40 text-emerald-400 text-xs font-semibold shadow-2xl flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 shrink-0" />
+          <span>{copiedUrlNotice}</span>
+        </div>
+      )}
+
       {/* Global Media Library Modal Accessible from any Tab */}
       <MediaLibraryModal
         isOpen={mediaModalOpen}
         onClose={() => setMediaModalOpen(false)}
         onSelectImage={(url) => {
-          navigator.clipboard?.writeText(url);
-          alert('Tautan gambar berhasil disalin ke clipboard:\n' + url);
+          if (navigator.clipboard?.writeText) {
+            navigator.clipboard.writeText(url).catch(() => {});
+          }
+          setCopiedUrlNotice(`Tautan gambar disalin ke clipboard: ${url}`);
+          setTimeout(() => setCopiedUrlNotice(null), 4000);
         }}
       />
 

@@ -4,7 +4,7 @@
  */
 
 /**
- * Design System Tokens — SANAK GEROBAK
+ * Design System Tokens | SANAK GEROBAK
  * Aesthetic: Premium Industrial Commerce
  */
 

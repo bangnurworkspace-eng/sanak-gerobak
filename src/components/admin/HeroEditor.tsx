@@ -6,6 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { getSiteSection, saveSiteSection } from '../../services/cmsService';
 import { BRAND_CONFIG } from '../../config/brand';
+import { resolveImageUrl, STUDIO_IMAGE_ASSETS } from '../../utils/assets';
 import { Save, Loader2, Image as ImageIcon, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { MediaLibraryModal } from './MediaLibraryModal';
 
@@ -14,41 +15,34 @@ interface HeroEditorProps {
 }
 
 export const HeroEditor: React.FC<HeroEditorProps> = ({ onRefreshPublicSite }) => {
-  const [title, setTitle] = useState('Solusi Gerobak & Booth Usaha Berkelas.');
+  const [title, setTitle] = useState('');
   const [tagline, setTagline] = useState(BRAND_CONFIG.officialTagline);
-  const [supportingText, setSupportingText] = useState(
-    'Kami merancang dan memproduksi gerobak jualan serta booth usaha modern dengan material kokoh, tata ruang fungsional, dan estetika yang memikat pelanggan.'
-  );
-  const [heroImage, setHeroImage] = useState('/src/assets/images/hero_gerobak_bontang_1793275251642.jpg');
-  const [badgeText, setBadgeText] = useState('Spesialis Gerobak & Booth Custom Bontang');
+  const [supportingText, setSupportingText] = useState('');
+  const [heroImage, setHeroImage] = useState<string>(STUDIO_IMAGE_ASSETS.heroPremium);
+  const [badgeText, setBadgeText] = useState('');
   const [status, setStatus] = useState<'published' | 'draft'>('published');
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [mediaModalOpen, setMediaModalOpen] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
     const loadHero = async () => {
       setIsLoading(true);
       try {
-        const data = await getSiteSection('hero', {
-          title: 'Solusi Gerobak & Booth Usaha Berkelas.',
-          tagline: BRAND_CONFIG.officialTagline,
-          supportingText:
-            'Kami merancang dan memproduksi gerobak jualan serta booth usaha modern dengan material kokoh, tata ruang fungsional, dan estetika yang memikat pelanggan.',
-          heroImage: '/src/assets/images/hero_gerobak_bontang_1793275251642.jpg',
-          badgeText: 'Spesialis Gerobak & Booth Custom Bontang',
-          status: 'published' as const,
-        });
+        const data = await getSiteSection<any>('hero');
         if (data) {
-          setTitle(data.title);
-          setTagline(data.tagline);
-          setSupportingText(data.supportingText);
-          setHeroImage(data.heroImage);
-          setBadgeText(data.badgeText);
+          setTitle(data.title || '');
+          setTagline(data.tagline || BRAND_CONFIG.officialTagline);
+          setSupportingText(data.supportingText || '');
+          setHeroImage(resolveImageUrl(data.heroImage, STUDIO_IMAGE_ASSETS.heroPremium));
+          setBadgeText(data.badgeText || '');
           setStatus(data.status || 'published');
         }
+      } catch (err: any) {
+        setErrorMsg('Gagal memuat Hero dari Firestore: ' + (err.message || ''));
       } finally {
         setIsLoading(false);
       }
@@ -60,6 +54,7 @@ export const HeroEditor: React.FC<HeroEditorProps> = ({ onRefreshPublicSite }) =
     e.preventDefault();
     setIsSaving(true);
     setSaveSuccess(false);
+    setErrorMsg(null);
     try {
       await saveSiteSection('hero', {
         title,
@@ -73,7 +68,7 @@ export const HeroEditor: React.FC<HeroEditorProps> = ({ onRefreshPublicSite }) =
       await onRefreshPublicSite();
       setTimeout(() => setSaveSuccess(false), 4000);
     } catch (err: any) {
-      alert('Gagal menyimpan Hero Section: ' + err.message);
+      setErrorMsg('Gagal menyimpan Hero Section: ' + err.message);
     } finally {
       setIsSaving(false);
     }
@@ -92,12 +87,20 @@ export const HeroEditor: React.FC<HeroEditorProps> = ({ onRefreshPublicSite }) =
           </p>
         </div>
 
-        {saveSuccess && (
-          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold">
-            <CheckCircle2 className="w-4 h-4" />
-            <span>Tersimpan di Cloud</span>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          {saveSuccess && (
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold">
+              <CheckCircle2 className="w-4 h-4" />
+              <span>Tersimpan di Cloud</span>
+            </div>
+          )}
+          {errorMsg && (
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-semibold">
+              <AlertCircle className="w-4 h-4" />
+              <span>{errorMsg}</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {isLoading ? (

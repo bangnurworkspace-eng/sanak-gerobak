@@ -3,7 +3,23 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { BRAND_CONFIG } from '../config/brand';
+let liveWhatsAppNumber = '';
+let liveOfficialTagline = 'Butuh Gerobak Jualan? SANAK GEROBAK Aja!';
+
+/**
+ * Syncs WhatsApp configuration directly from Cloud Firestore settings.
+ */
+export function setLiveWhatsAppConfig(config: {
+  whatsappNumber?: string;
+  officialTagline?: string;
+}): void {
+  if (typeof config.whatsappNumber === 'string' && config.whatsappNumber.trim()) {
+    liveWhatsAppNumber = config.whatsappNumber.trim();
+  }
+  if (typeof config.officialTagline === 'string' && config.officialTagline.trim()) {
+    liveOfficialTagline = config.officialTagline.trim();
+  }
+}
 
 /**
  * Validates and sanitizes international phone number format.
@@ -20,13 +36,12 @@ export function sanitizeWhatsAppNumber(rawNumber: string): string {
 
 /**
  * Central WhatsApp URL Generator
- * Generates properly URL-encoded WhatsApp click-to-chat links.
+ * Generates properly URL-encoded WhatsApp click-to-chat links from Firestore settings.
  */
-export function createWhatsAppUrl(messageText: string): string {
-  const sanitizedNumber = sanitizeWhatsAppNumber(BRAND_CONFIG.contact.whatsappNumber);
-  
+export function createWhatsAppUrl(messageText: string, explicitNumber?: string): string {
+  const sanitizedNumber = sanitizeWhatsAppNumber(explicitNumber || liveWhatsAppNumber);
+
   if (!sanitizedNumber || sanitizedNumber.length < 9) {
-    console.warn('[SANAK GEROBAK] Nomor WhatsApp belum dikonfigurasi dengan benar.');
     return '#';
   }
 
@@ -35,27 +50,22 @@ export function createWhatsAppUrl(messageText: string): string {
 }
 
 /**
- * Pesan Konsultasi Umum (Prompt B)
- * "Halo SANAK GEROBAK, saya ingin konsultasi mengenai pembuatan gerobak jualan."
+ * Pesan Konsultasi Umum
  */
-export function getGeneralInquiryUrl(): string {
+export function getGeneralInquiryUrl(explicitNumber?: string): string {
   const message = `Halo SANAK GEROBAK, saya ingin konsultasi mengenai pembuatan gerobak jualan.`;
-  return createWhatsAppUrl(message);
+  return createWhatsAppUrl(message, explicitNumber);
 }
 
 /**
- * Pesan Katalog Khusus (Prompt B)
- * "Halo SANAK GEROBAK, saya tertarik dengan desain [NAMA DESAIN]. Bisa saya konsultasikan detail dan estimasi biayanya?"
+ * Pesan Katalog Khusus
  */
-export function getCatalogInquiryUrl(designName: string): string {
+export function getCatalogInquiryUrl(designName: string, explicitNumber?: string): string {
   const cleanName = designName.trim();
   const message = `Halo SANAK GEROBAK, saya tertarik dengan desain ${cleanName}. Bisa saya konsultasikan detail dan estimasi biayanya?`;
-  return createWhatsAppUrl(message);
+  return createWhatsAppUrl(message, explicitNumber);
 }
 
-/**
- * Pesan Formulir Konsultasi Terstruktur (Prompt C)
- */
 export interface ConsultationFormData {
   fullName: string;
   customerPhone?: string;
@@ -93,13 +103,13 @@ export function compileConsultationMessage(data: ConsultationFormData): string {
   }
 
   lines.push(``);
-  lines.push(`“${BRAND_CONFIG.officialTagline}”`);
+  lines.push(`“${liveOfficialTagline}”`);
   lines.push(`Mohon informasi jadwal dan langkah konsultasinya. Terima kasih!`);
 
   return lines.join('\n');
 }
 
-export function getConsultationFormUrl(data: ConsultationFormData): string {
+export function getConsultationFormUrl(data: ConsultationFormData, explicitNumber?: string): string {
   const message = compileConsultationMessage(data);
-  return createWhatsAppUrl(message);
+  return createWhatsAppUrl(message, explicitNumber);
 }

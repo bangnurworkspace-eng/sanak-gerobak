@@ -54,10 +54,10 @@ export const CATALOG_DATA: CatalogItem[] = [
     categoryLabel: 'Gerobak Kopi',
     shortDescription: 'Inspirasi gerobak kopi keliling premium dengan meja kayu jati solid, rangka charcoal, dan rel champagne gold.',
     fullDescription: 'Konsep gerobak kopi mobile yang dirancang untuk kedai kopi modern, pop-up cafe, maupun katering acara. Mengedepankan ruang kerja yang kompak namun efisien untuk mesin espresso komersial 2-group, grinder, knockbox, serta kompartemen penyimpanan galon air bersih dan buang.',
-    image: '/src/assets/images/gerobak_coffee_cart_1793275252747.jpg',
+    image: '/assets/images/gerobak_coffee_cart_1793275252747.jpg',
     gallery: [
-      '/src/assets/images/gerobak_coffee_cart_1793275252747.jpg',
-      '/src/assets/images/bontang_local_culinary_1793275672214.jpg',
+      '/assets/images/gerobak_coffee_cart_1793275252747.jpg',
+      '/assets/images/bontang_local_culinary_1793275672214.jpg',
     ],
     designTags: ['Industrial Charcoal', 'Teak Wood Finish', 'Ergonomic Barista'],
     features: [
@@ -79,10 +79,10 @@ export const CATALOG_DATA: CatalogItem[] = [
     categoryLabel: 'Gerobak Minuman',
     shortDescription: 'Konsep gerobak minuman modern berpalet warm ivory, aksen gold, dan kanopi kain krem yang elegan.',
     fullDescription: 'Inspirasi gerobak minuman dengan visual bersih dan estetik, sangat pas untuk usaha teh artisan, matcha bar, jus segar, atau mocktail kekinian. Dilengkapi papan menu vertikal gantung terintegrasi dan meja saji kayu pinus alami dengan lapisan pelindung tahan air.',
-    image: '/src/assets/images/gerobak_minimalist_kiosk_1793275672764.jpg',
+    image: '/assets/images/gerobak_minimalist_kiosk_1793275672764.jpg',
     gallery: [
-      '/src/assets/images/gerobak_minimalist_kiosk_1793275672764.jpg',
-      '/src/assets/images/gerobak_coffee_cart_1793275252747.jpg',
+      '/assets/images/gerobak_minimalist_kiosk_1793275672764.jpg',
+      '/assets/images/gerobak_coffee_cart_1793275252747.jpg',
     ],
     designTags: ['Warm Ivory Aesthetic', 'Champagne Gold Trim', 'Minimalist Awning'],
     features: [
@@ -104,10 +104,10 @@ export const CATALOG_DATA: CatalogItem[] = [
     categoryLabel: 'Gerobak Makanan',
     shortDescription: 'Gerobak kuliner malam hari dengan etalase kaca tempered, lampu filamen gantung, dan meja stainless.',
     fullDescription: 'Rancangan gerobak kuliner modern yang memadukan daya tahan plat midnight navy dengan meja kerja stainless steel higienis. Mengakomodasi kebutuhan kompor gas, panggangan, atau penggorengan dengan kompartemen tabung gas berventilasi aman.',
-    image: '/src/assets/images/gerobak_street_food_1793275253637.jpg',
+    image: '/assets/images/gerobak_street_food_1793275253637.jpg',
     gallery: [
-      '/src/assets/images/gerobak_street_food_1793275253637.jpg',
-      '/src/assets/images/bontang_local_culinary_1793275672214.jpg',
+      '/assets/images/gerobak_street_food_1793275253637.jpg',
+      '/assets/images/bontang_local_culinary_1793275672214.jpg',
     ],
     designTags: ['Midnight Navy', 'Food-Grade Stainless', 'Night Market Lighting'],
     features: [
@@ -129,10 +129,10 @@ export const CATALOG_DATA: CatalogItem[] = [
     categoryLabel: 'Booth Street Food',
     shortDescription: 'Inspirasi warung kopi dan street food bernuansa kayu Kalimantan dengan kanopi seng industrial kokoh.',
     fullDescription: 'Konsep tempat jualan berkarakter lokal yang merangkul kehangatan nongkrong khas Indonesia. Menggunakan kayu palet treatment anti rayap dan rangka besi hollow tebal. Cocok untuk usaha kopi tubruk, angkringan modern, pisang goreng, hingga aneka sarapan pagi.',
-    image: '/src/assets/images/bontang_local_culinary_1793275672214.jpg',
+    image: '/assets/images/bontang_local_culinary_1793275672214.jpg',
     gallery: [
-      '/src/assets/images/bontang_local_culinary_1793275672214.jpg',
-      '/src/assets/images/gerobak_street_food_1793275253637.jpg',
+      '/assets/images/bontang_local_culinary_1793275672214.jpg',
+      '/assets/images/gerobak_street_food_1793275253637.jpg',
     ],
     designTags: ['Local Heritage Wood', 'Industrial Canopy', 'Street Commerce'],
     features: [
@@ -154,10 +154,10 @@ export const CATALOG_DATA: CatalogItem[] = [
     categoryLabel: 'Booth Minimalis',
     shortDescription: 'Konsep gerai semi-permanen panel kontainer corrugated dengan jendela hidrolik gas-spring.',
     fullDescription: 'Booth usaha mandiri yang siap diletakkan di halaman parkir ruko, pujasera, atau area taman kuliner. Dinding spandek gelombang memberikan perlindungan keamanan maksimal di malam hari karena seluruh jendela dan pintu dapat dikunci rapat.',
-    image: '/src/assets/images/gerobak_booth_container_1793275253367.jpg',
+    image: '/assets/images/gerobak_booth_container_1793275253367.jpg',
     gallery: [
-      '/src/assets/images/gerobak_booth_container_1793275253367.jpg',
-      '/src/assets/images/hero_gerobak_premium_1793275251800.jpg',
+      '/assets/images/gerobak_booth_container_1793275253367.jpg',
+      '/assets/images/hero_gerobak_premium_1793275251800.jpg',
     ],
     designTags: ['Corrugated Container', 'Gas-Spring Window', 'All-Weather Shelter'],
     features: [
@@ -179,10 +179,10 @@ export const CATALOG_DATA: CatalogItem[] = [
     categoryLabel: 'Custom Concept',
     shortDescription: 'Eksplorasi konsep futuristik dengan rangka baja bersudut geometris presisi dan lis champagne gold.',
     fullDescription: 'Sebuah studi desain arsitektural untuk usaha minuman kekinian, mocktail, atau event exhibition khusus yang ingin tampil paling berani. Konstruksi rangka trapesium geometris dengan aksen garis gold memberikan siluet visual yang sangat ikonik dan mudah diingat.',
-    image: '/src/assets/images/gerobak_custom_angular_1793275937077.jpg',
+    image: '/assets/images/gerobak_custom_angular_1793275937077.jpg',
     gallery: [
-      '/src/assets/images/gerobak_custom_angular_1793275937077.jpg',
-      '/src/assets/images/gerobak_minimalist_kiosk_1793275672764.jpg',
+      '/assets/images/gerobak_custom_angular_1793275937077.jpg',
+      '/assets/images/gerobak_minimalist_kiosk_1793275672764.jpg',
     ],
     designTags: ['Geometric Avant-Garde', 'Architectural Steel', 'Exhibition Grade'],
     features: [

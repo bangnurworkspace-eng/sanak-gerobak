@@ -52,6 +52,13 @@ export const ProductCatalogEditor: React.FC<ProductCatalogEditorProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [mediaModalOpen, setMediaModalOpen] = useState(false);
   const [mediaTargetField, setMediaTargetField] = useState<'image' | 'gallery'>('image');
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [confirmDeleteTarget, setConfirmDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+
+  const showFeedback = (type: 'success' | 'error', message: string) => {
+    setFeedback({ type, message });
+    setTimeout(() => setFeedback(null), 4000);
+  };
 
   // Form Fields
   const [formName, setFormName] = useState('');
@@ -95,8 +102,8 @@ export const ProductCatalogEditor: React.FC<ProductCatalogEditorProps> = ({
     setFormCategoryLabel('Gerobak Kopi');
     setFormShortDesc('');
     setFormFullDesc('');
-    setFormImage('/src/assets/images/gerobak_coffee_cart_1793275252747.jpg');
-    setFormGallery(['/src/assets/images/gerobak_coffee_cart_1793275252747.jpg']);
+    setFormImage('/assets/images/gerobak_coffee_cart_1793275252747.jpg');
+    setFormGallery(['/assets/images/gerobak_coffee_cart_1793275252747.jpg']);
     setFormTags(['Rangka Baja', 'Custom Desain']);
     setFormFeatures(['Meja Food-Grade Stainless Steel', 'Rangka Galvanis Kokoh', 'Instalasi Listrik Terpadu']);
     setFormConceptType('Inspirasi Desain');
@@ -168,22 +175,29 @@ export const ProductCatalogEditor: React.FC<ProductCatalogEditorProps> = ({
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formName.trim()) {
-      alert('Nama produk tidak boleh kosong');
+      showFeedback('error', 'Nama produk tidak boleh kosong.');
       return;
     }
+
+    const cleanSlug =
+      (formSlug || formName)
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)+/g, '') || `cart-${Date.now()}`;
 
     setIsSaving(true);
     try {
       const productData: CMSProduct = {
         id: currentProduct?.id || `cart-${Date.now()}`,
-        slug: formSlug || `cart-${Date.now()}`,
-        name: formName,
+        slug: cleanSlug,
+        name: formName.trim(),
         category: formCategory,
         categoryLabel: formCategoryLabel,
-        shortDescription: formShortDesc,
-        fullDescription: formFullDesc,
-        image: formImage,
-        gallery: formGallery.length > 0 ? formGallery : [formImage],
+        shortDescription: formShortDesc.trim(),
+        fullDescription: formFullDesc.trim(),
+        image: formImage.trim(),
+        gallery: formGallery.length > 0 ? formGallery : [formImage.trim()],
         designTags: formTags,
         features: formFeatures,
         conceptType: formConceptType,
@@ -196,37 +210,43 @@ export const ProductCatalogEditor: React.FC<ProductCatalogEditorProps> = ({
       setEditModalOpen(false);
       await loadData();
       await onRefreshPublicSite();
+      showFeedback('success', `Desain "${formName}" berhasil disimpan.`);
     } catch (err: any) {
-      alert('Gagal menyimpan produk: ' + err.message);
+      showFeedback('error', 'Gagal menyimpan produk: ' + err.message);
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleDuplicate = async (id: string) => {
-    if (!window.confirm('Duplikasi item ini sebagai draf baru?')) return;
     setIsLoading(true);
     try {
       await duplicateProduct(id);
       await loadData();
+      showFeedback('success', 'Item berhasil diduplikasi sebagai draf baru.');
     } catch (err) {
-      alert('Gagal menduplikasi produk.');
+      showFeedback('error', 'Gagal menduplikasi produk.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleDelete = async (id: string, name: string) => {
-    if (!window.confirm(`Yakin ingin menghapus desain "${name}"? Tindakan ini tidak dapat dibatalkan.`)) {
-      return;
-    }
+  const handleDelete = (id: string, name: string) => {
+    setConfirmDeleteTarget({ id, name });
+  };
+
+  const executeConfirmedDelete = async () => {
+    if (!confirmDeleteTarget) return;
+    const { id, name } = confirmDeleteTarget;
+    setConfirmDeleteTarget(null);
     setIsLoading(true);
     try {
       await deleteProduct(id);
       await loadData();
       await onRefreshPublicSite();
+      showFeedback('success', `Desain "${name}" berhasil dihapus.`);
     } catch (err) {
-      alert('Gagal menghapus produk.');
+      showFeedback('error', 'Gagal menghapus produk.');
     } finally {
       setIsLoading(false);
     }
@@ -238,17 +258,19 @@ export const ProductCatalogEditor: React.FC<ProductCatalogEditorProps> = ({
       await saveProduct({ ...p, status: nextStatus });
       await loadData();
       await onRefreshPublicSite();
+      showFeedback('success', `Status publikasi "${p.name}" diperbarui.`);
     } catch (err) {
-      alert('Gagal mengubah status publikasi.');
+      showFeedback('error', 'Gagal mengubah status publikasi.');
     }
   };
 
   // Filtered Products
   const filteredProducts = products.filter((p) => {
+    const q = searchQuery.toLowerCase();
     const matchSearch =
-      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.categoryLabel.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.shortDescription.toLowerCase().includes(searchQuery.toLowerCase());
+      (p.name || '').toLowerCase().includes(q) ||
+      (p.categoryLabel || '').toLowerCase().includes(q) ||
+      (p.shortDescription || '').toLowerCase().includes(q);
 
     const matchCategory = categoryFilter === 'all' || p.category === categoryFilter;
     const matchStatus = statusFilter === 'all' || p.status === statusFilter;
@@ -278,6 +300,29 @@ export const ProductCatalogEditor: React.FC<ProductCatalogEditorProps> = ({
           <span>Tambah Desain Baru</span>
         </button>
       </div>
+
+      {feedback && (
+        <div
+          className={`p-3.5 rounded-xl border text-xs font-semibold flex items-center justify-between ${
+            feedback.type === 'success'
+              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+              : 'bg-red-500/10 border-red-500/30 text-red-400'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 shrink-0" />
+            <span>{feedback.message}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setFeedback(null)}
+            className="text-white/60 hover:text-white"
+            aria-label="Tutup pemberitahuan"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* Filter and Search Bar */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-3 bg-[#101827] p-4 rounded-2xl border border-white/10">
@@ -738,6 +783,36 @@ export const ProductCatalogEditor: React.FC<ProductCatalogEditorProps> = ({
               </div>
 
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {confirmDeleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-[#101827] border border-white/10 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+            <h3 className="text-base font-bold text-white font-['Manrope']">
+              Hapus Desain Katalog?
+            </h3>
+            <p className="text-xs text-[#A4A7AE] leading-relaxed">
+              Yakin ingin menghapus desain <strong className="text-white">"{confirmDeleteTarget.name}"</strong>? Tindakan ini tidak dapat dibatalkan.
+            </p>
+            <div className="pt-2 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setConfirmDeleteTarget(null)}
+                className="px-4 py-2 text-xs text-[#A4A7AE] hover:text-white rounded-lg border border-white/10"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={executeConfirmedDelete}
+                className="px-4 py-2 text-xs font-bold uppercase tracking-wider bg-red-500 hover:bg-red-600 text-white rounded-lg"
+              >
+                Ya, Hapus
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -5,22 +5,21 @@
 
 import React, { useState, useEffect } from 'react';
 import { getSiteSection, saveSiteSection } from '../../services/cmsService';
-import { BRAND_CONFIG } from '../../config/brand';
-import { Save, Loader2, CheckCircle2, PhoneCall, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { Save, Loader2, CheckCircle2, ShieldCheck, AlertTriangle } from 'lucide-react';
 
 interface ContactEditorProps {
   onRefreshPublicSite: () => Promise<void>;
 }
 
 export const ContactEditor: React.FC<ContactEditorProps> = ({ onRefreshPublicSite }) => {
-  const [whatsappNumber, setWhatsappNumber] = useState(BRAND_CONFIG.contact.whatsappNumber);
-  const [whatsappDisplay, setWhatsappDisplay] = useState(BRAND_CONFIG.contact.whatsappDisplay);
-  const [instagramUrl, setInstagramUrl] = useState(BRAND_CONFIG.contact.instagramUrl);
-  const [instagramHandle, setInstagramHandle] = useState(BRAND_CONFIG.contact.instagramHandle);
-  const [email, setEmail] = useState(BRAND_CONFIG.contact.email);
-  const [serviceArea, setServiceArea] = useState(BRAND_CONFIG.contact.serviceArea);
-  const [workshopAddress, setWorkshopAddress] = useState(BRAND_CONFIG.contact.workshopAddress);
-  const [businessHours, setBusinessHours] = useState(BRAND_CONFIG.contact.businessHours);
+  const [whatsappNumber, setWhatsappNumber] = useState('');
+  const [whatsappDisplay, setWhatsappDisplay] = useState('');
+  const [instagramUrl, setInstagramUrl] = useState('');
+  const [instagramHandle, setInstagramHandle] = useState('');
+  const [email, setEmail] = useState('');
+  const [serviceArea, setServiceArea] = useState('');
+  const [workshopAddress, setWorkshopAddress] = useState('');
+  const [businessHours, setBusinessHours] = useState('');
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -31,26 +30,19 @@ export const ContactEditor: React.FC<ContactEditorProps> = ({ onRefreshPublicSit
     const loadContact = async () => {
       setIsLoading(true);
       try {
-        const data = await getSiteSection('settings', { contact: BRAND_CONFIG.contact });
+        const data = await getSiteSection<any>('settings');
         if (data?.contact) {
-          const isOldPlaceholder = data.contact.whatsappNumber === '6282154321098';
-          setWhatsappNumber(
-            isOldPlaceholder
-              ? BRAND_CONFIG.contact.whatsappNumber
-              : data.contact.whatsappNumber || BRAND_CONFIG.contact.whatsappNumber
-          );
-          setWhatsappDisplay(
-            isOldPlaceholder
-              ? BRAND_CONFIG.contact.whatsappDisplay
-              : data.contact.whatsappDisplay || BRAND_CONFIG.contact.whatsappDisplay
-          );
-          setInstagramUrl(data.contact.instagramUrl || BRAND_CONFIG.contact.instagramUrl);
-          setInstagramHandle(data.contact.instagramHandle || BRAND_CONFIG.contact.instagramHandle);
-          setEmail(data.contact.email || BRAND_CONFIG.contact.email);
-          setServiceArea(data.contact.serviceArea || BRAND_CONFIG.contact.serviceArea);
-          setWorkshopAddress(data.contact.workshopAddress || BRAND_CONFIG.contact.workshopAddress);
-          setBusinessHours(data.contact.businessHours || BRAND_CONFIG.contact.businessHours);
+          setWhatsappNumber(data.contact.whatsappNumber || '');
+          setWhatsappDisplay(data.contact.whatsappDisplay || '');
+          setInstagramUrl(data.contact.instagramUrl || '');
+          setInstagramHandle(data.contact.instagramHandle || '');
+          setEmail(data.contact.email || '');
+          setServiceArea(data.contact.serviceArea || '');
+          setWorkshopAddress(data.contact.workshopAddress || '');
+          setBusinessHours(data.contact.businessHours || '');
         }
+      } catch (err: any) {
+        setValidationWarning('Gagal memuat kontak dari Firestore: ' + (err.message || ''));
       } finally {
         setIsLoading(false);
       }
@@ -101,9 +93,6 @@ export const ContactEditor: React.FC<ContactEditorProps> = ({ onRefreshPublicSit
           businessHours,
         },
       });
-
-      BRAND_CONFIG.contact.whatsappNumber = normalizedNumber;
-      BRAND_CONFIG.contact.whatsappDisplay = whatsappDisplay || '0823-4462-8667';
 
       setSaveSuccess(true);
       await onRefreshPublicSite();

@@ -18,6 +18,7 @@ import { WhatsAppCTA } from './components/WhatsAppCTA';
 import { AdminLoginPage } from './components/admin/AdminLoginPage';
 import { AdminDashboard } from './components/admin/AdminDashboard';
 import { useAdminAuth } from './context/AdminAuthContext';
+import { smoothScrollTo, smoothScrollToSection } from './utils/smoothScroll';
 import { Loader2 } from 'lucide-react';
 
 export default function App() {
@@ -50,6 +51,29 @@ export default function App() {
     };
   }, []);
 
+  // Intercept internal section anchor links (#beranda, #katalog, #proses, #tentang-kami) for silky-smooth scrolling
+  useEffect(() => {
+    const handleAnchorClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      const anchor = target?.closest('a[href^="#"]') as HTMLAnchorElement | null;
+      if (!anchor) return;
+
+      const href = anchor.getAttribute('href');
+      if (!href || href === '#' || href.startsWith('#/admin') || href.startsWith('#admin') || href.startsWith('#desain-')) {
+        return;
+      }
+
+      const sectionId = href.slice(1);
+      if (sectionId === 'beranda' || document.getElementById(sectionId)) {
+        e.preventDefault();
+        smoothScrollToSection(sectionId);
+      }
+    };
+
+    document.addEventListener('click', handleAnchorClick);
+    return () => document.removeEventListener('click', handleAnchorClick);
+  }, []);
+
   const navigateTo = (path: string) => {
     window.history.pushState(null, '', path);
     if (path.includes('login')) {
@@ -59,14 +83,11 @@ export default function App() {
     } else {
       setCurrentRoute('site');
     }
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    smoothScrollTo(0, 600);
   };
 
   const scrollToCatalog = () => {
-    const el = document.getElementById('katalog');
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
-    }
+    smoothScrollToSection('katalog');
   };
 
   // Route 1: Admin Login
@@ -119,7 +140,7 @@ export default function App() {
 
   // Route 3: Public Website
   return (
-    <div className="min-h-screen bg-[#101827] text-white flex flex-col font-['Plus_Jakarta_Sans'] selection:bg-[#D6B46A] selection:text-[#101827] overflow-x-hidden">
+    <div className="min-h-screen bg-[#101827] text-white flex flex-col font-['Plus_Jakarta_Sans'] selection:bg-[#D6B46A] selection:text-[#101827] overflow-x-clip">
       {/* A. Navbar (Scroll-reactive transparent to solid, Top Bar Contract, WhatsApp action) */}
       <Navbar />
 
